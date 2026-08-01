@@ -513,100 +513,6 @@ body.notes-open { overflow: hidden; }
 .work-report-head h2 { margin-top: 7px; font-size: 23px; }
 .work-report-head p { margin: 8px 0 0; color: #cbd3e2; font-size: 11px; }
 .work-report-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.work-report.pdf-exporting .work-report-actions { display: none !important; }
-#pdfExportHost {
-  position: fixed;
-  left: -12000px;
-  top: 0;
-  width: 1100px;
-  margin: 0;
-  padding: 0;
-  background: #fff;
-  pointer-events: none;
-  z-index: -1;
-}
-.pdf-export-sheet.pdf-exporting,
-.work-report.pdf-exporting {
-  width: 1100px !important;
-  max-width: 1100px !important;
-  margin: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: #fff !important;
-  color: #111827 !important;
-  overflow: visible !important;
-}
-.pdf-export-sheet .work-report-head,
-.work-report.pdf-exporting .work-report-head {
-  display: block !important;
-  padding: 18px 20px 14px !important;
-  color: #111827 !important;
-  border-bottom: 2px solid #111827 !important;
-  background: #fff !important;
-}
-.pdf-export-sheet .work-report-head h2 { margin: 4px 0 0 !important; font-size: 22px !important; }
-.pdf-export-sheet .work-report-head p,
-.pdf-export-sheet .report-document-label,
-.work-report.pdf-exporting .work-report-head p,
-.work-report.pdf-exporting .report-document-label { color: #4b5563 !important; }
-.pdf-export-sheet .work-report-summary {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  border-bottom: 1px solid #d1d5db !important;
-}
-.pdf-export-sheet .work-report-summary div {
-  padding: 12px 14px !important;
-  border-right: 1px solid #e5e7eb !important;
-  border-bottom: 1px solid #e5e7eb !important;
-}
-.pdf-export-sheet .work-report-summary span,
-.pdf-export-sheet .work-report-section-title small,
-.work-report.pdf-exporting .work-report-summary span,
-.work-report.pdf-exporting .work-report-section-title small { color: #6b7280 !important; }
-.pdf-export-sheet .work-report-summary strong { font-size: 15px !important; }
-.pdf-export-sheet .work-report-section-title { padding: 14px 16px 6px !important; }
-.pdf-export-sheet .work-report-table,
-.work-report.pdf-exporting .work-report-table {
-  overflow: visible !important;
-  padding: 0 8px 10px !important;
-}
-.pdf-export-sheet .work-report-table table {
-  width: 100% !important;
-  table-layout: fixed !important;
-}
-.pdf-export-sheet .work-report-table th,
-.pdf-export-sheet .work-report-table td {
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-  vertical-align: top !important;
-  padding: 8px 6px !important;
-  font-size: 10px !important;
-  line-height: 1.35 !important;
-  border-bottom: 1px solid #e5e7eb !important;
-}
-.pdf-export-sheet .work-report-table th {
-  white-space: nowrap !important;
-  font-size: 9px !important;
-  background: #f3f4f6 !important;
-  color: #374151 !important;
-}
-.pdf-export-sheet .badge {
-  display: inline !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  color: #111827 !important;
-  font-size: inherit !important;
-  box-shadow: none !important;
-}
-.pdf-export-sheet td.report-note {
-  min-width: 0 !important;
-  max-width: none !important;
-  white-space: pre-wrap !important;
-}
 .report-document-label { color: #aeb8ff; font-size: 9px; font-weight: 900; letter-spacing: .14em; }
 .work-report-summary { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
 .work-report-summary div { padding: 19px 22px; border-right: 1px solid var(--line); }
@@ -630,10 +536,6 @@ body.notes-open { overflow: hidden; }
   line-height: 1.45;
   vertical-align: top;
 }
-.pdf-export-sheet .work-report-table th:last-child,
-.pdf-export-sheet .work-report-table td.report-note,
-.work-report.pdf-exporting .work-report-table th:last-child,
-.work-report.pdf-exporting .work-report-table td.report-note,
 body.printing-work-report .work-report-table th:last-child,
 body.printing-work-report .work-report-table td.report-note {
   max-width: none;

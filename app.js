@@ -1233,38 +1233,73 @@ function printGeneratedWorkReport() {
   window.print();
 }
 
-function loadHtml2Pdf() {
-  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+function loadScriptOnce(src, marker) {
   return new Promise((resolve, reject) => {
-    const existing = document.querySelector("script[data-html2pdf]");
+    const existing = document.querySelector(`script[data-lib="${marker}"]`);
     if (existing) {
-      existing.addEventListener("load", () => (window.html2pdf ? resolve(window.html2pdf) : reject(new Error("PDF kütüphanesi yüklenemedi."))), { once: true });
+      if (existing.dataset.loaded === "1") return resolve();
+      existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener("error", () => reject(new Error("PDF kütüphanesi yüklenemedi.")), { once: true });
       return;
     }
     const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.src = src;
     script.async = true;
-    script.dataset.html2pdf = "1";
-    script.onload = () => (window.html2pdf ? resolve(window.html2pdf) : reject(new Error("PDF kütüphanesi yüklenemedi.")));
+    script.dataset.lib = marker;
+    script.onload = () => { script.dataset.loaded = "1"; resolve(); };
     script.onerror = () => reject(new Error("PDF kütüphanesi yüklenemedi."));
     document.head.appendChild(script);
   });
 }
 
-function buildWorkReportPdfSheet(report) {
-  const host = document.createElement("div");
-  host.id = "pdfExportHost";
-  host.setAttribute("aria-hidden", "true");
-  const clone = report.cloneNode(true);
-  clone.id = "generatedWorkReportPdfClone";
-  clone.hidden = false;
-  clone.removeAttribute("hidden");
-  clone.classList.add("pdf-exporting", "pdf-export-sheet");
-  clone.querySelector(".work-report-actions")?.remove();
-  host.appendChild(clone);
-  document.body.appendChild(host);
-  return { host, clone };
+async function loadPdfLibs() {
+  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js", "jspdf");
+  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js", "jspdf-autotable");
+  if (!window.jspdf?.jsPDF) throw new Error("PDF kütüphanesi hazır değil.");
+}
+
+async function ensurePdfFont(doc) {
+  if (ensurePdfFont.ready) {
+    doc.addFileToVFS("DejaVuSans.ttf", ensurePdfFont.ready);
+    doc.addFont("DejaVuSans.ttf", "ReportFont", "normal");
+    doc.setFont("ReportFont", "normal");
+    return;
+  }
+  const response = await fetch("https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf");
+  if (!response.ok) throw new Error("PDF yazı tipi yüklenemedi.");
+  const buffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  ensurePdfFont.ready = btoa(binary);
+  doc.addFileToVFS("DejaVuSans.ttf", ensurePdfFont.ready);
+  doc.addFont("DejaVuSans.ttf", "ReportFont", "normal");
+  doc.setFont("ReportFont", "normal");
+}
+
+function collectWorkReportPdfData() {
+  const { start, end } = generatedReportRange;
+  const work = state.workSessions
+    .filter(item => inDateRange(item.date, start, end))
+    .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`));
+  const sales = state.sales
+    .filter(item => inDateRange(item.date, start, end))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const won = wonSales(sales);
+  return {
+    start,
+    end,
+    work,
+    sales,
+    minutes: work.reduce((sum, item) => sum + Number(item.minutes || 0), 0),
+    income: workIncome(work),
+    days: new Set(work.map(item => item.date)).size,
+    salesTotal: won.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    commission: won.reduce((sum, item) => sum + Number(item.commission || 0), 0)
+  };
 }
 
 async function downloadGeneratedWorkReportPdf() {
@@ -1272,41 +1307,133 @@ async function downloadGeneratedWorkReportPdf() {
   if (!generatedReportRange || report?.hidden) return toast("Önce bir çalışma raporu oluşturun.");
   const button = $("#downloadWorkReportPdfBtn");
   const previousLabel = button?.textContent;
-  let host = null;
   try {
     if (button) {
       button.disabled = true;
       button.textContent = "PDF hazırlanıyor…";
     }
-    const html2pdf = await loadHtml2Pdf();
-    const filename = `workstation-rapor-${generatedReportRange.start}_${generatedReportRange.end}.pdf`;
-    ({ host } = buildWorkReportPdfSheet(report));
-    const sheet = host.querySelector(".pdf-export-sheet");
-    // A4 yatay: geniş tablolar sıkışmadan sığsın
-    const sheetWidth = 1100;
-    await html2pdf().set({
-      margin: [8, 8, 8, 8],
-      filename,
-      image: { type: "png", quality: 1 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        width: sheetWidth,
-        windowWidth: sheetWidth,
-        scrollX: 0,
-        scrollY: 0,
-        logging: false
+    await loadPdfLibs();
+    const data = collectWorkReportPdfData();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    await ensurePdfFont(doc);
+
+    const period = `${formatDate(data.start, { day: "numeric", month: "long", year: "numeric" })} – ${formatDate(data.end, { day: "numeric", month: "long", year: "numeric" })}`;
+    doc.setFontSize(10);
+    doc.setTextColor(75, 85, 99);
+    doc.text("ÇALIŞMA FAALİYET RAPORU", 14, 14);
+    doc.setFontSize(18);
+    doc.setTextColor(17, 24, 39);
+    doc.text("Workstation", 14, 22);
+    doc.setFontSize(10);
+    doc.setTextColor(75, 85, 99);
+    doc.text(period, 14, 28);
+    doc.text(`Oluşturulma: ${new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })}`, 14, 34);
+
+    doc.setFontSize(9);
+    doc.setTextColor(17, 24, 39);
+    doc.text([
+      `Toplam çalışma: ${formatDuration(data.minutes)}`,
+      `Çalışma kazancı: ${formatMoney(data.income)}`,
+      `Çalışılan gün: ${data.days}`,
+      `Çalışma kaydı: ${data.work.length}`,
+      `Satış kaydı: ${data.sales.length}`,
+      `Kazanılan satış: ${formatMoney(data.salesTotal)}`,
+      `Prim: ${formatMoney(data.commission)}`
+    ].join("   |   "), 14, 42);
+
+    const tableOptions = {
+      theme: "grid",
+      styles: {
+        font: "ReportFont",
+        fontSize: 8,
+        cellPadding: 2.2,
+        overflow: "linebreak",
+        valign: "top",
+        textColor: [31, 41, 55],
+        lineColor: [229, 231, 235],
+        lineWidth: 0.2
       },
-      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
-      pagebreak: { mode: ["css", "legacy"] }
-    }).from(sheet).save();
+      headStyles: {
+        font: "ReportFont",
+        fontStyle: "normal",
+        fillColor: [243, 244, 246],
+        textColor: [55, 65, 81],
+        fontSize: 8
+      },
+      margin: { left: 14, right: 14 }
+    };
+
+    doc.setFontSize(11);
+    doc.text("Faaliyet dökümü", 14, 50);
+    doc.autoTable({
+      ...tableOptions,
+      startY: 53,
+      head: [["Tarih", "Saat", "Süre", "Kazanç", "Müşteri / Proje", "Yapılan iş", "Açıklama"]],
+      body: data.work.length
+        ? data.work.map(item => [
+          formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
+          formatTimeRange(item.start, item.end),
+          `${formatDuration(item.minutes)}${item.breakMinutes ? ` (${Number(item.breakMinutes)} dk mola)` : ""}`,
+          `${formatMoney(sessionIncome(item))} (${formatMoney(sessionHourlyRate(item))}/sa)`,
+          relationLabel(item, "—"),
+          item.title || "—",
+          item.note || "—"
+        ])
+        : [["Seçilen aralıkta çalışma kaydı yok", "", "", "", "", "", ""]],
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 32 },
+        4: { cellWidth: 36 },
+        5: { cellWidth: 40 },
+        6: { cellWidth: "auto" }
+      }
+    });
+
+    const salesStart = (doc.lastAutoTable?.finalY || 60) + 10;
+    doc.setFontSize(11);
+    doc.setTextColor(17, 24, 39);
+    doc.text("Satış dökümü", 14, salesStart);
+    doc.setFontSize(8);
+    doc.setTextColor(107, 114, 128);
+    doc.text("Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir", 14, salesStart + 5);
+
+    doc.autoTable({
+      ...tableOptions,
+      startY: salesStart + 8,
+      head: [["Tarih", "Satış", "Müşteri / Proje", "Aşama", "Tutar", "Prim", "Prim durumu", "Not"]],
+      body: data.sales.length
+        ? data.sales.map(item => [
+          formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
+          item.title || "—",
+          relationLabel(item, "—"),
+          stageLabel(item.stage),
+          formatMoney(item.amount),
+          `${formatMoney(item.commission)} (%${Number(item.commissionRate || 0)})`,
+          paymentLabel(item.paymentStatus),
+          item.note || "—"
+        ])
+        : [["Seçilen aralıkta satış kaydı yok", "", "", "", "", "", "", ""]],
+      columnStyles: {
+        0: { cellWidth: 26 },
+        1: { cellWidth: 32 },
+        2: { cellWidth: 34 },
+        3: { cellWidth: 24 },
+        4: { cellWidth: 24 },
+        5: { cellWidth: 28 },
+        6: { cellWidth: 24 },
+        7: { cellWidth: "auto" }
+      }
+    });
+
+    doc.save(`workstation-rapor-${data.start}_${data.end}.pdf`);
     toast("PDF indirildi.");
   } catch (error) {
     console.warn("PDF indirme başarısız", error);
     toast(error?.message || "PDF indirilemedi.");
   } finally {
-    host?.remove();
     if (button) {
       button.disabled = false;
       button.textContent = previousLabel || "PDF olarak indir";
