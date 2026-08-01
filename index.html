@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101827" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="DenizWork — çalışma saatleri, satış primi, todo ve müşteri takibini tek yerde tutan kişisel panel." />
+  <title>DenizWork</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">DW</div>
+        <div><strong>DenizWork</strong><span>Kişisel çalışma alanı</span></div>
+      </div>
+      <nav class="nav" aria-label="Ana menü">
+        <button class="nav-item active" data-view="dashboard"><b>⌂</b><span>Panel</span></button>
+        <button class="nav-item" data-view="calendar"><b>◷</b><span>Takvim</span></button>
+        <button class="nav-item" data-view="mywork"><b>▤</b><span>Çalışmalarım</span></button>
+        <button class="nav-item" data-view="todos"><b>✓</b><span>Todo</span></button>
+        <button class="nav-item" data-view="sales"><b>₺</b><span>Satışlar</span></button>
+        <button class="nav-item" data-view="crm"><b>◎</b><span>Müşteriler</span></button>
+        <button class="nav-item" data-view="reports"><b>▥</b><span>Raporlar</span></button>
+        <button class="nav-item" data-view="settings"><b>⚙</b><span>Ayarlar</span></button>
+      </nav>
+      <div class="sidebar-summary"><span>Bu ay prim bilgisi</span><strong id="sidebarMonthlyIncome">₺0</strong></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><p class="eyebrow" id="todayLabel"></p><h1 id="pageTitle">Genel Bakış</h1></div>
+        <div class="topbar-actions">
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Koyu temaya geç" aria-pressed="false">
+            <span class="theme-toggle-icon" aria-hidden="true"></span>
+            <span class="theme-toggle-label">Koyu</span>
+          </button>
+          <button class="timer-pill" id="timerPill" data-open-timer><span class="timer-dot"></span><strong id="timerPillText">Sayaç başlat</strong></button>
+          <button class="primary-btn" id="quickAddBtn">+ Hızlı Ekle</button>
+        </div>
+      </header>
+
+      <section class="view active" id="dashboardView">
+        <div class="period-bar">
+          <div class="period-tabs" role="tablist" aria-label="Özet dönemi">
+            <button class="period-tab active" data-period="day" type="button" role="tab" aria-selected="true" aria-controls="dashboardPeriodPanel" id="periodTabDay" tabindex="0">Bugün</button>
+            <button class="period-tab" data-period="week" type="button" role="tab" aria-selected="false" aria-controls="dashboardPeriodPanel" id="periodTabWeek" tabindex="-1">Bu Hafta</button>
+            <button class="period-tab" data-period="month" type="button" role="tab" aria-selected="false" aria-controls="dashboardPeriodPanel" id="periodTabMonth" tabindex="-1">Bu Ay</button>
+          </div>
+          <div class="period-dates" aria-label="Özel tarih aralığı">
+            <label class="period-date-field"><span>Başlangıç</span><input type="date" id="periodStart" /></label>
+            <span class="period-date-sep" aria-hidden="true">–</span>
+            <label class="period-date-field"><span>Bitiş</span><input type="date" id="periodEnd" /></label>
+          </div>
+          <small class="period-range" id="periodRangeLabel"></small>
+        </div>
+
+        <div class="today-actions" aria-label="Sık kullanılan işlemler">
+          <div class="today-actions-copy"><span>Hızlı işlemler</span><strong>Bugün ne yapmak istiyorsunuz?</strong></div>
+          <button data-open-timer><b>▶</b><span><strong>Çalışmaya başla</strong><small>Tek dokunuşla başlat</small></span></button>
+          <button data-open-modal="work"><b>＋</b><span><strong>Çalışma ekle</strong><small>Geçmiş kayıt</small></span></button>
+          <button data-open-modal="todo"><b>✓</b><span><strong>Todo planla</strong><small>Görev ve saat</small></span></button>
+          <button data-open-modal="sale"><b>₺</b><span><strong>Satış ekle</strong><small>Prim hesabı</small></span></button>
+        </div>
+
+        <div class="stats-grid five" id="dashboardPeriodPanel" role="tabpanel" aria-labelledby="periodTabDay">
+          <article class="stat-card accent-blue"><span>Çalışma Kazancı</span><strong id="statHourlyIncome">₺0</strong><small><span id="statHours">0 sa</span> • <span id="statWorkCount">0 kayıt</span></small></article>
+          <article class="stat-card accent-purple"><span>Toplam Satış</span><strong id="statSales">₺0</strong><small id="statSalesCount">0 kazanılan satış</small></article>
+          <article class="stat-card accent-amber"><span>Prim Bilgisi</span><strong id="statCommission">₺0</strong><small id="statPendingCommission">₺0 bekliyor</small></article>
+          <article class="stat-card accent-red"><span>Gider</span><strong id="statExpense">₺0</strong><small>Kayıtlı iş giderleri</small></article>
+          <article class="stat-card accent-green"><span>Ödenen Prim</span><strong id="statTotalIncome">₺0</strong><small>Bilgilendirme amaçlı</small></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel timer-card" id="dashboardTimerCard">
+            <div class="panel-header"><div><span class="panel-kicker">Canlı çalışma</span><h2 id="dashboardTimerTitle">Sayaç hazır</h2></div><span class="live-badge" id="dashboardTimerState">Hazır</span></div>
+            <div class="timer-display" id="dashboardTimerDisplay">00:00:00</div>
+            <div class="timer-meta" id="dashboardTimerMeta">Tek tıkla şimdi başlayın; ayrıntıları çalışma bittikten sonra ekleyebilirsiniz.</div>
+            <div class="timer-actions">
+              <button class="primary-btn" id="dashboardTimerMain" data-open-timer>Çalışmaya Başla</button>
+              <button class="secondary-btn hidden" id="dashboardTimerStop" data-stop-timer>Bitir ve Kaydet</button>
+            </div>
+          </article>
+
+          <article class="panel span-2">
+            <div class="panel-header"><div><span class="panel-kicker" id="workChartKicker">Seçili dönem</span><h2>Çalışma süreleri</h2></div><small id="weeklyChartTotal"></small></div>
+            <div class="chart" id="weeklyChart"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header"><div><span class="panel-kicker">Bugün</span><h2>Sıradaki işler</h2></div><button class="text-btn" data-view-link="todos">Tümünü gör</button></div>
+            <div class="compact-list" id="todayTodos"></div>
+          </article>
+
+          <article class="panel span-2">
+            <div class="panel-header"><div><span class="panel-kicker">Hedefler</span><h2>Bu ayın ilerlemesi</h2></div></div>
+            <div class="goal-grid">
+              <div class="goal-block"><div class="goal-title"><span>Satış</span><b id="salesGoalPercent">%0</b></div><div class="progress"><span id="goalProgress"></span></div><small id="goalText"></small></div>
+              <div class="goal-block"><div class="goal-title"><span>Prim hedefi</span><b id="incomeGoalPercent">%0</b></div><div class="progress green"><span id="incomeGoalProgress"></span></div><small id="incomeGoalText"></small></div>
+              <div class="goal-block"><div class="goal-title"><span>Çalışma</span><b id="workGoalPercent">%0</b></div><div class="progress amber"><span id="workGoalProgress"></span></div><small id="workGoalText"></small></div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header"><div><span class="panel-kicker">Yerel analiz</span><h2>Akıllı özet</h2></div></div>
+            <div class="insight-list" id="insightList"></div>
+          </article>
+
+          <article class="panel span-3">
+            <div class="panel-header"><div><span class="panel-kicker">Son hareketler</span><h2>Çalışma ve satış akışı</h2></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Tür</th><th>Açıklama</th><th>Bağlantı</th><th>Tarih</th><th>Değer</th></tr></thead><tbody id="recentActivity"></tbody></table></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="calendarView">
+        <div class="cal-shell">
+          <header class="cal-hero">
+            <div class="cal-hero-top">
+              <div class="cal-date-nav">
+                <button type="button" class="cal-nav-btn" id="prevDayBtn" aria-label="Önceki gün">‹</button>
+                <div class="cal-date-block">
+                  <p class="cal-weekday" id="calWeekday"></p>
+                  <h2 class="cal-date-title" id="calDateTitle"></h2>
+                  <label class="cal-date-picker"><span class="sr-only">Gün seç</span><input type="date" id="calendarDate" /></label>
+                </div>
+                <button type="button" class="cal-nav-btn" id="nextDayBtn" aria-label="Sonraki gün">›</button>
+              </div>
+              <button type="button" class="text-btn" id="todayBtn">Bugün</button>
+            </div>
+            <div class="week-strip" id="weekStrip" role="tablist" aria-label="Haftalık özet"></div>
+            <div class="cal-chips" id="daySummary"></div>
+            <div class="cal-actions">
+              <div class="cal-presets" aria-label="Hızlı saat">
+                <button type="button" class="cal-preset" data-cal-preset="morning">Sabah</button>
+                <button type="button" class="cal-preset" data-cal-preset="midday">Öğle</button>
+                <button type="button" class="cal-preset" data-cal-preset="afternoon">İkindi</button>
+                <button type="button" class="cal-preset" data-cal-preset="evening">Akşam</button>
+              </div>
+              <div class="cal-add-btns">
+                <button type="button" class="secondary-btn" data-open-modal="work">+ Çalışma</button>
+                <button type="button" class="secondary-btn" data-open-modal="todo">+ Todo</button>
+                <button type="button" class="secondary-btn" data-open-modal="sale">+ Satış</button>
+              </div>
+            </div>
+          </header>
+
+          <div class="cal-layout">
+            <section class="cal-program" aria-labelledby="calProgramTitle">
+              <div class="cal-section-head">
+                <div>
+                  <span class="panel-kicker">Program</span>
+                  <h3 id="calProgramTitle">Günün akışı</h3>
+                </div>
+                <small id="dayAgendaMeta"></small>
+              </div>
+              <div class="cal-program-list" id="dayAgenda" tabindex="0"></div>
+            </section>
+
+            <aside class="cal-side">
+              <div class="cal-side-card" id="dayGoal"></div>
+              <div class="cal-side-card">
+                <div class="cal-section-head compact">
+                  <div>
+                    <span class="panel-kicker">Satış</span>
+                    <h3>Prim kayıtları</h3>
+                  </div>
+                  <small id="daySalesCount"></small>
+                </div>
+                <div class="day-sales" id="daySales"></div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="todosView">
+        <div class="view-toolbar">
+          <div class="filter-row wrap">
+            <select id="todoStatusFilter"><option value="all">Tüm durumlar</option><option value="planned">Planlandı</option><option value="progress">Devam ediyor</option><option value="done">Tamamlandı</option><option value="postponed">Ertelendi</option></select>
+            <select id="todoPriorityFilter"><option value="all">Tüm öncelikler</option><option value="high">Yüksek</option><option value="medium">Orta</option><option value="low">Düşük</option></select>
+            <select id="todoProjectFilter"><option value="all">Tüm projeler</option></select>
+            <input type="date" id="todoDateFilter" />
+          </div>
+          <button class="primary-btn" data-open-modal="todo">+ Yeni Todo</button>
+        </div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>Durum</th><th>Öncelik</th><th>Görev</th><th>Proje</th><th>Tarih</th><th>Saat</th><th>Tekrar</th><th></th></tr></thead><tbody id="todoTable"></tbody></table></div></article>
+      </section>
+
+      <section class="view" id="myworkView">
+        <div class="view-toolbar mywork-toolbar">
+          <div class="date-navigation">
+            <button class="secondary-btn compact" id="myWorkPrevDay" type="button" aria-label="Önceki gün">‹</button>
+            <div><label for="myWorkDate">Gün seç</label><input type="date" id="myWorkDate" /></div>
+            <button class="secondary-btn compact" id="myWorkNextDay" type="button" aria-label="Sonraki gün">›</button>
+            <button class="text-btn" id="myWorkToday" type="button">Bugün</button>
+          </div>
+          <div class="toolbar-actions"><button class="secondary-btn" data-open-modal="todo">+ Todo</button><button class="secondary-btn" data-open-modal="sale">+ Satış</button><button class="primary-btn" data-open-modal="work">+ Çalışma</button></div>
+        </div>
+        <div class="mywork-summary" id="myWorkSummary"></div>
+        <article class="panel mywork-panel">
+          <div class="panel-header"><div><span class="panel-kicker">Günlük kayıtlar</span><h2 id="myWorkHeading">Bugünün çalışmaları</h2></div><small id="myWorkCount"></small></div>
+          <div class="mywork-list" id="myWorkList"></div>
+        </article>
+      </section>
+
+      <section class="view" id="salesView">
+        <div class="view-toolbar">
+          <div class="sales-summary-inline"><div><span>Bu ay kazanılan satış</span><strong id="salesMonthTotal">₺0</strong></div><div><span>Hak edilen prim</span><strong id="salesMonthCommission">₺0</strong></div><div><span>Bekleyen prim</span><strong id="salesPendingCommission">₺0</strong></div></div>
+          <button class="primary-btn" data-open-modal="sale">+ Yeni Satış</button>
+        </div>
+        <div class="pipeline-grid" id="pipelineGrid"></div>
+        <article class="panel">
+          <div class="filter-row wrap table-filters"><select id="saleStageFilter"><option value="all">Tüm aşamalar</option><option value="lead">Potansiyel</option><option value="contacted">Görüşüldü</option><option value="proposal">Teklif</option><option value="won">Kazanıldı</option><option value="lost">Kaybedildi</option></select><select id="salePaymentFilter"><option value="all">Tüm prim durumları</option><option value="pending">Bekliyor</option><option value="approved">Onaylandı</option><option value="paid">Ödendi</option></select><select id="saleCustomerFilter"><option value="all">Tüm müşteriler</option></select></div>
+          <div class="table-wrap"><table><thead><tr><th>Satış</th><th>Müşteri</th><th>Tarih</th><th>Aşama</th><th>Tutar</th><th>Prim</th><th>Prim ödemesi</th><th></th></tr></thead><tbody id="salesTable"></tbody></table></div>
+        </article>
+      </section>
+
+      <section class="view" id="crmView">
+        <div class="crm-toolbar"><div><p class="section-lead">Müşteriler, projeler, çalışma süreleri ve satışlar</p></div><div class="toolbar-actions"><button class="secondary-btn" data-open-modal="customer">+ Müşteri</button><button class="primary-btn" data-open-modal="project">+ Proje</button></div></div>
+        <div class="crm-grid">
+          <article class="panel"><div class="panel-header"><div><span class="panel-kicker">CRM</span><h2>Müşteriler</h2></div><span class="count-badge" id="customerCount">0</span></div><div class="card-list" id="customerList"></div></article>
+          <article class="panel"><div class="panel-header"><div><span class="panel-kicker">Çalışma alanları</span><h2>Projeler</h2></div><span class="count-badge" id="projectCount">0</span></div><div class="card-list" id="projectList"></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="reportsView">
+        <article class="panel report-builder">
+          <div class="report-builder-copy">
+            <span class="panel-kicker">Sabit rapor şablonu</span>
+            <h2>Çalışma Raporu Oluştur</h2>
+            <p>İstediğiniz tarih aralığındaki çalışma süresini, yapılan işleri ve satışları tek bir standart raporda hazırlayın.</p>
+          </div>
+          <form class="report-builder-form" id="workReportForm">
+            <div class="report-presets" aria-label="Hazır tarih aralıkları">
+              <button type="button" data-report-preset="today">Bugün</button>
+              <button type="button" data-report-preset="week">Bu hafta</button>
+              <button type="button" data-report-preset="month">Bu ay</button>
+              <button type="button" data-report-preset="last-month">Geçen ay</button>
+            </div>
+            <label>Başlangıç tarihi<input type="date" id="workReportStart" required /></label>
+            <label>Bitiş tarihi<input type="date" id="workReportEnd" required /></label>
+            <button class="primary-btn" type="submit">Rapor Oluştur</button>
+          </form>
+        </article>
+
+        <article class="work-report panel" id="generatedWorkReport" hidden aria-live="polite">
+          <div class="work-report-head">
+            <div><span class="report-document-label">ÇALIŞMA FAALİYET RAPORU</span><h2>DenizWork</h2><p id="workReportPeriod">—</p></div>
+            <div class="work-report-actions"><button class="secondary-btn" id="clearWorkReportBtn" type="button">Temizle</button><button class="secondary-btn" id="printWorkReportBtn" type="button">Yazdır / PDF</button></div>
+          </div>
+          <div class="work-report-summary">
+            <div><span>Toplam çalışma</span><strong id="workReportHours">0 dk</strong></div>
+            <div><span>Çalışma kazancı</span><strong id="workReportIncome">₺0</strong></div>
+            <div><span>Çalışılan gün</span><strong id="workReportDays">0</strong></div>
+            <div><span>Çalışma kaydı</span><strong id="workReportCount">0</strong></div>
+            <div><span>Satış kaydı</span><strong id="workReportSalesCount">0</strong></div>
+            <div><span>Kazanılan satış</span><strong id="workReportSalesTotal">₺0</strong></div>
+            <div><span>Prim bilgisi</span><strong id="workReportCommission">₺0</strong></div>
+          </div>
+          <div class="work-report-section-title"><div><span>Faaliyet dökümü</span><small id="workReportCreatedAt"></small></div></div>
+          <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Saat</th><th>Süre</th><th>Kazanç</th><th>Müşteri / Proje</th><th>Yapılan iş</th><th>Açıklama</th></tr></thead><tbody id="workReportTable"></tbody></table></div>
+          <div class="work-report-section-title"><div><span>Satış dökümü</span><small>Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir</small></div></div>
+          <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Satış</th><th>Müşteri / Proje</th><th>Aşama</th><th>Tutar</th><th>Prim</th><th>Prim durumu</th><th>Not</th></tr></thead><tbody id="workReportSalesTable"></tbody></table></div>
+          <div class="work-report-footer">Bu rapor DenizWork uygulamasındaki yerel çalışma ve satış kayıtlarından oluşturulmuştur.</div>
+        </article>
+
+        <div class="view-toolbar"><div class="filter-row"><input type="month" id="reportMonth" /></div><div class="toolbar-actions"><button class="secondary-btn" id="exportCsvBtn">CSV Raporu</button><button class="primary-btn" id="printReportBtn">Yazdır / PDF</button></div></div>
+        <div class="stats-grid three report-stats">
+          <article class="stat-card accent-blue"><span>Çalışma Kazancı</span><strong id="reportWorkIncome">₺0</strong><small id="reportHours">0 sa</small></article>
+          <article class="stat-card accent-purple"><span>Satış</span><strong id="reportSales">₺0</strong><small id="reportSalesCount">0 satış</small></article>
+          <article class="stat-card accent-amber"><span>Prim Bilgisi</span><strong id="reportCommission">₺0</strong><small id="reportPaidCommission">₺0 ödendi</small></article>
+        </div>
+        <div class="dashboard-grid report-grid">
+          <article class="panel span-2"><div class="panel-header"><div><span class="panel-kicker">Dağılım</span><h2>Proje performansı</h2></div></div><div class="table-wrap"><table><thead><tr><th>Proje</th><th>Müşteri</th><th>Süre</th><th>Çalışma kaydı</th><th>Satış</th><th>Prim</th></tr></thead><tbody id="projectReportTable"></tbody></table></div></article>
+          <article class="panel"><div class="panel-header"><div><span class="panel-kicker">Zaman yönetimi</span><h2>Plan / gerçekleşen</h2></div></div><div id="planningReport" class="metric-list"></div></article>
+          <article class="panel span-3"><div class="panel-header"><div><span class="panel-kicker">Zaman kayıtları</span><h2>Çalışma geçmişi</h2></div><button class="text-btn" data-open-modal="work">+ Çalışma ekle</button></div><div class="table-wrap"><table><thead><tr><th>Çalışma</th><th>Müşteri / Proje</th><th>Tarih</th><th>Saat</th><th>Net süre</th><th></th></tr></thead><tbody id="workSessionTable"></tbody></table></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="settingsView">
+        <div class="settings-grid">
+          <article class="panel"><div class="panel-header"><h2>Hedef ayarları</h2></div><form id="settingsForm" class="form-grid">
+            <label>Saatlik çalışma ücreti<div class="input-affix"><span>₺</span><input type="number" id="hourlyRate" min="0" step="0.01" required /></div></label>
+            <label>Varsayılan satış prim oranı<div class="input-affix suffix"><input type="number" id="defaultCommissionRate" min="0" max="100" step="0.01" required /><span>%</span></div></label>
+            <label>Aylık satış hedefi<div class="input-affix"><span>₺</span><input type="number" id="monthlySalesTarget" min="0" step="0.01" required /></div></label>
+            <label>Aylık prim hedefi<div class="input-affix"><span>₺</span><input type="number" id="monthlyIncomeTarget" min="0" step="0.01" required /></div></label>
+            <label>Günlük çalışma hedefi<div class="input-affix suffix"><input type="number" id="dailyWorkTargetHours" min="0" step="0.5" required /><span>saat</span></div></label>
+            <button class="primary-btn" type="submit">Ayarları Kaydet</button>
+          </form></article>
+          <article class="panel"><div class="panel-header"><h2>Yerel veri yönetimi</h2></div><p class="muted">Hesap, bulut, senkronizasyon ve PWA bulunmaz. Tüm bilgiler yalnızca bu tarayıcıda saklanır.</p><div class="data-safety-note"><strong>Güvenli geri yükleme</strong><span>Yedekler içe aktarılmadan önce doğrulanır; mevcut veriler tarayıcıda geçici bir güvenlik kopyasına alınır.</span></div><div class="stack-actions"><button class="secondary-btn" id="exportBtn">JSON Yedeği Al</button><label class="secondary-btn file-btn">JSON Yedeği Yükle<input type="file" id="importInput" accept="application/json,.json" /></label><button class="danger-btn" id="resetBtn">Tüm Verileri Sil</button></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" aria-label="Kapat">×</button>
+      <p class="eyebrow" id="modalEyebrow">Kayıt</p><h2 id="modalTitle">Hızlı Ekle</h2>
+      <div class="quick-actions" id="quickActions">
+        <button data-open-timer><strong>Canlı Sayaç</strong><span>Şimdi doğrudan başlat</span></button>
+        <button data-select-form="work"><strong>Çalışma Kaydı</strong><span>Geçmiş çalışma süresi ekle</span></button>
+        <button data-select-form="todo"><strong>Todo</strong><span>Saatlik görev planla</span></button>
+        <button data-select-form="sale"><strong>Satış</strong><span>Satış, aşama ve prim ekle</span></button>
+        <button data-select-form="expense"><strong>Gider</strong><span>İş gideri kaydet</span></button>
+      </div>
+
+      <form id="timerForm" class="modal-form hidden">
+        <label>Çalışma başlığı<input name="title" required placeholder="Örn. API geliştirmesi" /></label>
+        <label>Açıklama<textarea name="note" rows="2" placeholder="Ne üzerinde çalışacaksın? (isteğe bağlı)"></textarea></label>
+        <details class="optional-fields"><summary>Müşteri / proje <span>İsteğe bağlı</span></summary>
+          <label>Müşteri<select name="customerId" data-customer-select><option value="">Müşteri yok</option></select></label>
+          <label>Proje<select name="projectId" data-project-select><option value="">Proje yok</option></select></label>
+          <label>Todo<select name="todoId" data-todo-select><option value="">Todo ile bağlama</option></select></label>
+        </details>
+        <button class="primary-btn" type="submit">Sayacı Başlat</button>
+      </form>
+
+      <form id="workForm" class="modal-form hidden">
+        <input type="hidden" name="editId" />
+        <label>Ne yaptın?<input name="title" required placeholder="Örn. API geliştirmesi, bug fix, refactor" /></label>
+        <label>Açıklama<textarea name="note" rows="3" placeholder="Ne üzerinde çalıştın? Detay, commit, çözülen sorun…"></textarea></label>
+        <label>Tarih<input type="date" name="date" required /></label>
+        <div class="two-col"><label>Başlangıç<input type="time" name="start" required /></label><label>Bitiş<input type="time" name="end" required /></label></div>
+        <details class="optional-fields"><summary>Müşteri / proje / mola <span>İsteğe bağlı</span></summary>
+          <div class="two-col"><label>Müşteri<select name="customerId" data-customer-select><option value="">Müşteri yok</option></select></label><label>Proje<select name="projectId" data-project-select><option value="">Proje yok</option></select></label></div>
+          <label>Todo<select name="todoId" data-todo-select><option value="">Todo ile bağlama</option></select></label>
+          <label>Mola (dakika)<input type="number" name="breakMinutes" min="0" step="5" value="0" /></label>
+        </details>
+        <button class="primary-btn" type="submit">Çalışmayı Kaydet</button>
+      </form>
+
+      <form id="todoForm" class="modal-form hidden">
+        <input type="hidden" name="editId" />
+        <label>Görev<input name="title" required placeholder="Örn. Teklif metnini hazırla" /></label>
+        <div class="two-col"><label>Müşteri<select name="customerId" data-customer-select><option value="">Müşteri yok</option></select></label><label>Proje<select name="projectId" data-project-select><option value="">Proje yok</option></select></label></div>
+        <div class="two-col"><label>Öncelik<select name="priority"><option value="medium">Orta</option><option value="high">Yüksek</option><option value="low">Düşük</option></select></label><label>Durum<select name="status"><option value="planned">Planlandı</option><option value="progress">Devam ediyor</option><option value="done">Tamamlandı</option><option value="postponed">Ertelendi</option></select></label></div>
+        <label>Tarih<input type="date" name="date" required /></label>
+        <div class="two-col"><label>Başlangıç<input type="time" name="start" required /></label><label>Bitiş<input type="time" name="end" required /></label></div>
+        <details class="optional-fields"><summary>Tekrar ve not <span>İsteğe bağlı</span></summary><label>Tekrar<select name="recurrence"><option value="none">Tekrarlama</option><option value="daily">Her gün</option><option value="weekly">Her hafta</option><option value="monthly">Her ay</option></select></label><label>Not<textarea name="note" rows="2"></textarea></label></details>
+        <button class="primary-btn" type="submit">Todo’yu Kaydet</button>
+      </form>
+
+      <form id="saleForm" class="modal-form hidden">
+        <input type="hidden" name="editId" />
+        <label>Satış / ürün<input name="title" required placeholder="Örn. Kurumsal paket" /></label>
+        <div class="two-col">
+          <div class="field-stack">
+            <div class="field-with-action">
+              <label>Müşteri<select name="customerId" data-customer-select id="saleCustomerSelect"><option value="">Müşteri yok</option></select></label>
+              <button type="button" class="secondary-btn compact" id="saleNewCustomerBtn" title="Yeni müşteri ekle" aria-expanded="false" aria-controls="saleInlineCustomer">+ Yeni</button>
+            </div>
+            <div class="inline-create" id="saleInlineCustomer" hidden>
+              <label>Şirket adı<input type="text" id="saleNewCustomerName" placeholder="Örn. Yeni müşteri A.Ş." autocomplete="organization" /></label>
+              <label>Not<textarea id="saleNewCustomerNote" rows="2" placeholder="Görüşme notu, karar verici, tercihler…"></textarea></label>
+              <div class="inline-create-section">
+                <span class="inline-create-label">Toplantı planı <em>isteğe bağlı</em></span>
+                <label>Tarih<input type="date" id="saleNewCustomerMeetingDate" /></label>
+                <div class="two-col">
+                  <label>Başlangıç<input type="time" id="saleNewCustomerMeetingStart" /></label>
+                  <label>Bitiş<input type="time" id="saleNewCustomerMeetingEnd" /></label>
+                </div>
+              </div>
+              <div class="inline-create-actions">
+                <button type="button" class="primary-btn compact" id="saleNewCustomerSave">Müşteriyi ekle</button>
+                <button type="button" class="text-btn" id="saleNewCustomerCancel">Vazgeç</button>
+              </div>
+            </div>
+          </div>
+          <label>Proje<select name="projectId" data-project-select><option value="">Proje yok</option></select></label>
+        </div>
+        <label>Tarih<input type="date" name="date" required /></label>
+        <div class="two-col"><label>Satış tutarı<input type="number" name="amount" min="0" step="0.01" required /></label><label>Prim oranı (%)<input type="number" name="commissionRate" min="0" step="0.01" required /></label></div>
+        <div class="commission-preview">Hesaplanan prim: <strong id="commissionPreview">₺0</strong></div>
+        <div class="two-col"><label>Satış aşaması<select name="stage"><option value="lead">Potansiyel</option><option value="contacted">Görüşüldü</option><option value="proposal">Teklif gönderildi</option><option value="won">Kazanıldı</option><option value="lost">Kaybedildi</option></select></label><label>Prim durumu<select name="paymentStatus"><option value="pending">Bekliyor</option><option value="approved">Onaylandı</option><option value="paid">Ödendi</option></select></label></div>
+        <details class="optional-fields"><summary>Ödeme tarihleri ve not <span>İsteğe bağlı</span></summary><div class="two-col"><label>Beklenen prim tarihi<input type="date" name="expectedPaymentDate" /></label><label>Ödeme tarihi<input type="date" name="paidAt" /></label></div><label>Not<textarea name="note" rows="2"></textarea></label></details>
+        <button class="primary-btn" type="submit">Satışı Kaydet</button>
+      </form>
+
+      <form id="customerForm" class="modal-form hidden">
+        <input type="hidden" name="editId" />
+        <label>Şirket adı<input name="name" required placeholder="Örn. ABC Teknoloji" /></label>
+        <label>Yetkili kişi<input name="contact" placeholder="Ad soyad" /></label>
+        <div class="two-col"><label>E-posta<input type="email" name="email" /></label><label>Telefon<input name="phone" /></label></div>
+        <label>Not<textarea name="initialNote" rows="2" placeholder="İlk görüşme notu, tercihler…"></textarea></label>
+        <details class="optional-fields" id="customerMeetingPlan">
+          <summary>Toplantı planı <span>İsteğe bağlı · takvime ekler</span></summary>
+          <label>Tarih<input type="date" name="meetingDate" /></label>
+          <div class="two-col">
+            <label>Başlangıç<input type="time" name="meetingStart" /></label>
+            <label>Bitiş<input type="time" name="meetingEnd" /></label>
+          </div>
+          <p class="form-hint">Doldurulursa takvim ve todo listesine toplantı olarak eklenir.</p>
+        </details>
+        <label class="check-row"><input type="checkbox" name="demoMeetingDone" /> Demo toplantısı yapıldı</label>
+        <p class="form-hint">Sonraki notları müşteri kartındaki <strong>Notlar</strong> panelinden yönetebilirsiniz.</p>
+        <button class="primary-btn" type="submit">Müşteriyi Kaydet</button>
+      </form>
+
+      <form id="projectForm" class="modal-form hidden">
+        <input type="hidden" name="editId" />
+        <label>Proje adı<input name="name" required placeholder="Örn. Web sitesi yenileme" /></label>
+        <label>Müşteri<select name="customerId" data-customer-select required><option value="">Müşteri seç</option></select></label>
+        <label>Durum<select name="status"><option value="active">Aktif</option><option value="paused">Beklemede</option><option value="completed">Tamamlandı</option></select></label>
+        <label>Renk<input type="color" name="color" value="#4f7cff" /></label>
+        <label>Not<textarea name="note" rows="2"></textarea></label>
+        <button class="primary-btn" type="submit">Projeyi Kaydet</button>
+      </form>
+
+      <form id="expenseForm" class="modal-form hidden">
+        <input type="hidden" name="editId" />
+        <label>Gider açıklaması<input name="title" required placeholder="Örn. Yazılım aboneliği" /></label>
+        <div class="two-col"><label>Kategori<select name="category"><option>Yazılım</option><option>Reklam</option><option>Ulaşım</option><option>Yemek</option><option>Ekipman</option><option>Vergi</option><option>Diğer</option></select></label><label>Proje<select name="projectId" data-project-select><option value="">Proje yok</option></select></label></div>
+        <div class="two-col"><label>Tarih<input type="date" name="date" required /></label><label>Tutar<input type="number" name="amount" min="0" step="0.01" required /></label></div>
+        <label>Not<textarea name="note" rows="2"></textarea></label>
+        <button class="primary-btn" type="submit">Gideri Kaydet</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="notes-backdrop" id="customerNotesBackdrop" hidden></div>
+  <aside class="notes-panel" id="customerNotesPanel" hidden aria-labelledby="customerNotesTitle">
+    <div class="notes-panel-head">
+      <div>
+        <span class="panel-kicker">Müşteri notları</span>
+        <h2 id="customerNotesTitle">—</h2>
+        <small id="customerNotesCount">Henüz not yok</small>
+      </div>
+      <button type="button" class="modal-close" id="customerNotesClose" aria-label="Not panelini kapat">×</button>
+    </div>
+    <form class="notes-composer" id="customerNoteForm">
+      <label for="customerNoteText">Not</label>
+      <textarea id="customerNoteText" rows="4" placeholder="Görüşme özeti, karar, sonraki adım…" required></textarea>
+      <div class="notes-composer-actions">
+        <button type="button" class="text-btn" id="customerNoteCancelEdit" hidden>Vazgeç</button>
+        <button type="submit" class="primary-btn" id="customerNoteSubmit">Not Ekle</button>
+      </div>
+    </form>
+    <div class="customer-notes-list" id="customerNotesList"></div>
+  </aside>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
