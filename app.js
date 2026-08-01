@@ -1252,11 +1252,27 @@ function loadHtml2Pdf() {
   });
 }
 
+function buildWorkReportPdfSheet(report) {
+  const host = document.createElement("div");
+  host.id = "pdfExportHost";
+  host.setAttribute("aria-hidden", "true");
+  const clone = report.cloneNode(true);
+  clone.id = "generatedWorkReportPdfClone";
+  clone.hidden = false;
+  clone.removeAttribute("hidden");
+  clone.classList.add("pdf-exporting", "pdf-export-sheet");
+  clone.querySelector(".work-report-actions")?.remove();
+  host.appendChild(clone);
+  document.body.appendChild(host);
+  return { host, clone };
+}
+
 async function downloadGeneratedWorkReportPdf() {
   const report = $("#generatedWorkReport");
   if (!generatedReportRange || report?.hidden) return toast("Önce bir çalışma raporu oluşturun.");
   const button = $("#downloadWorkReportPdfBtn");
   const previousLabel = button?.textContent;
+  let host = null;
   try {
     if (button) {
       button.disabled = true;
@@ -1264,21 +1280,33 @@ async function downloadGeneratedWorkReportPdf() {
     }
     const html2pdf = await loadHtml2Pdf();
     const filename = `workstation-rapor-${generatedReportRange.start}_${generatedReportRange.end}.pdf`;
-    report.classList.add("pdf-exporting");
+    ({ host } = buildWorkReportPdfSheet(report));
+    const sheet = host.querySelector(".pdf-export-sheet");
+    // A4 yatay: geniş tablolar sıkışmadan sığsın
+    const sheetWidth = 1100;
     await html2pdf().set({
-      margin: [10, 10, 10, 10],
+      margin: [8, 8, 8, 8],
       filename,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      image: { type: "png", quality: 1 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        width: sheetWidth,
+        windowWidth: sheetWidth,
+        scrollX: 0,
+        scrollY: 0,
+        logging: false
+      },
+      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
       pagebreak: { mode: ["css", "legacy"] }
-    }).from(report).save();
+    }).from(sheet).save();
     toast("PDF indirildi.");
   } catch (error) {
     console.warn("PDF indirme başarısız", error);
     toast(error?.message || "PDF indirilemedi.");
   } finally {
-    report?.classList.remove("pdf-exporting");
+    host?.remove();
     if (button) {
       button.disabled = false;
       button.textContent = previousLabel || "PDF olarak indir";
