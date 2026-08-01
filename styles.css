@@ -513,6 +513,23 @@ body.notes-open { overflow: hidden; }
 .work-report-head h2 { margin-top: 7px; font-size: 23px; }
 .work-report-head p { margin: 8px 0 0; color: #cbd3e2; font-size: 11px; }
 .work-report-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.work-report.pdf-exporting .work-report-actions { display: none !important; }
+.work-report.pdf-exporting {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: #fff !important;
+  color: #111827 !important;
+}
+.work-report.pdf-exporting .work-report-head {
+  color: #111827 !important;
+  border-bottom: 2px solid #111827 !important;
+  background: #fff !important;
+}
+.work-report.pdf-exporting .work-report-head p,
+.work-report.pdf-exporting .report-document-label { color: #4b5563 !important; }
+.work-report.pdf-exporting .work-report-summary span,
+.work-report.pdf-exporting .work-report-section-title small { color: #6b7280 !important; }
+.work-report.pdf-exporting .work-report-table { overflow: visible; }
 .report-document-label { color: #aeb8ff; font-size: 9px; font-weight: 900; letter-spacing: .14em; }
 .work-report-summary { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
 .work-report-summary div { padding: 19px 22px; border-right: 1px solid var(--line); }
@@ -525,8 +542,26 @@ body.notes-open { overflow: hidden; }
 .work-report-section-title span { font-size: 13px; font-weight: 900; }
 .work-report-section-title small { color: var(--muted); font-size: 9px; }
 .work-report-table { padding: 0 10px 12px; border-radius: 0; }
-.work-report-footer { padding: 14px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; text-align: center; }
-
+.work-report-table table { table-layout: auto; }
+.work-report-table th:last-child,
+.work-report-table td.report-note {
+  min-width: 220px;
+  max-width: 420px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.45;
+  vertical-align: top;
+}
+.work-report.pdf-exporting .work-report-table th:last-child,
+.work-report.pdf-exporting .work-report-table td.report-note,
+body.printing-work-report .work-report-table th:last-child,
+body.printing-work-report .work-report-table td.report-note {
+  max-width: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-grid, .modal-form { display: grid; gap: 14px; }
 .form-grid label, .modal-form label { color: #687386; font-size: 10px; font-weight: 800; }

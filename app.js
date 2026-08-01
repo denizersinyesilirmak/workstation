@@ -1207,7 +1207,7 @@ function renderGeneratedWorkReport(showMessage = true) {
       <td><strong>${formatMoney(sessionIncome(item))}</strong><br><small>${formatMoney(sessionHourlyRate(item))}/sa</small></td>
       <td>${escapeHtml(relationLabel(item, "—"))}</td>
       <td><strong>${escapeHtml(item.title)}</strong></td>
-      <td>${escapeHtml(item.note || "—")}</td>
+      <td class="report-note">${escapeHtml(item.note || "—")}</td>
     </tr>`).join("") : `<tr><td colspan="7" class="empty-state">Seçilen tarih aralığında çalışma kaydı bulunamadı.</td></tr>`;
   $("#workReportSalesTable").innerHTML = sales.length ? sales.map(item => `
     <tr>
@@ -1218,7 +1218,7 @@ function renderGeneratedWorkReport(showMessage = true) {
       <td>${formatMoney(item.amount)}</td>
       <td><strong>${formatMoney(item.commission)}</strong><br><small>%${Number(item.commissionRate || 0)}</small></td>
       <td><span class="badge badge-${item.paymentStatus}">${paymentLabel(item.paymentStatus)}</span></td>
-      <td>${escapeHtml(item.note || "—")}</td>
+      <td class="report-note">${escapeHtml(item.note || "—")}</td>
     </tr>`).join("") : `<tr><td colspan="8" class="empty-state">Seçilen tarih aralığında satış kaydı bulunamadı.</td></tr>`;
   $("#generatedWorkReport").hidden = false;
   if (showMessage) {
@@ -1231,6 +1231,59 @@ function printGeneratedWorkReport() {
   if (!generatedReportRange || $("#generatedWorkReport").hidden) return toast("Önce bir çalışma raporu oluşturun.");
   document.body.classList.add("printing-work-report");
   window.print();
+}
+
+function loadHtml2Pdf() {
+  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector("script[data-html2pdf]");
+    if (existing) {
+      existing.addEventListener("load", () => (window.html2pdf ? resolve(window.html2pdf) : reject(new Error("PDF kütüphanesi yüklenemedi."))), { once: true });
+      existing.addEventListener("error", () => reject(new Error("PDF kütüphanesi yüklenemedi.")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.async = true;
+    script.dataset.html2pdf = "1";
+    script.onload = () => (window.html2pdf ? resolve(window.html2pdf) : reject(new Error("PDF kütüphanesi yüklenemedi.")));
+    script.onerror = () => reject(new Error("PDF kütüphanesi yüklenemedi."));
+    document.head.appendChild(script);
+  });
+}
+
+async function downloadGeneratedWorkReportPdf() {
+  const report = $("#generatedWorkReport");
+  if (!generatedReportRange || report?.hidden) return toast("Önce bir çalışma raporu oluşturun.");
+  const button = $("#downloadWorkReportPdfBtn");
+  const previousLabel = button?.textContent;
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = "PDF hazırlanıyor…";
+    }
+    const html2pdf = await loadHtml2Pdf();
+    const filename = `workstation-rapor-${generatedReportRange.start}_${generatedReportRange.end}.pdf`;
+    report.classList.add("pdf-exporting");
+    await html2pdf().set({
+      margin: [10, 10, 10, 10],
+      filename,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] }
+    }).from(report).save();
+    toast("PDF indirildi.");
+  } catch (error) {
+    console.warn("PDF indirme başarısız", error);
+    toast(error?.message || "PDF indirilemedi.");
+  } finally {
+    report?.classList.remove("pdf-exporting");
+    if (button) {
+      button.disabled = false;
+      button.textContent = previousLabel || "PDF olarak indir";
+    }
+  }
 }
 
 function clearGeneratedWorkReport() {
@@ -1293,7 +1346,7 @@ function navigate(viewName) {
   $$(".view").forEach(view => view.classList.remove("active"));
   $(`#${viewName}View`)?.classList.add("active");
   const titles = { dashboard: "Genel Bakış", calendar: "Günlük Takvim", mywork: "Çalışmalarım", todos: "Todo Listesi", sales: "Satışlar ve Prim", crm: "Müşteriler ve Projeler", reports: "Raporlar", settings: "Ayarlar" };
-  setText("#pageTitle", titles[viewName] || "DenizWork");
+  setText("#pageTitle", titles[viewName] || "Workstation");
   if (viewName === "reports") renderReports();
   if (viewName === "mywork") renderMyWork();
   if (viewName === "calendar") renderCalendar();
@@ -1367,8 +1420,8 @@ function showModalForm(formName) {
   }
   if (isNew) {
     const prefs = loadQuickPrefs();
-    // Çalışma ve todo kişisel olabilir; son müşteri/projeyi otomatik doldurma.
-    if (formName !== "work" && formName !== "todo") {
+    // Çalışma, todo ve proje kişisel olabilir; son müşteri/projeyi otomatik doldurma.
+    if (formName !== "work" && formName !== "todo" && formName !== "project") {
       for (const name of ["customerId", "projectId"]) {
         const input = $(`[name='${name}']`, form);
         if (input && prefs[name] && [...input.options].some(option => option.value === prefs[name])) input.value = prefs[name];
@@ -1755,7 +1808,7 @@ function createCustomerFromSaleForm() {
 
 function submitProject(form) {
   const data = formData(form); const existing = state.projects.find(item => item.id === data.editId);
-  const item = { id: data.editId || uid(), name: data.name.trim(), customerId: data.customerId, status: data.status, color: data.color || "#4f7cff", note: (data.note || "").trim(), createdAt: existing?.createdAt || Date.now() };
+  const item = { id: data.editId || uid(), name: data.name.trim(), customerId: data.customerId || "", status: data.status, color: data.color || "#4f7cff", note: (data.note || "").trim(), createdAt: existing?.createdAt || Date.now() };
   upsert(state.projects, item); saveState(); form.reset(); closeModal(); renderAll(); toast(existing ? "Proje güncellendi." : "Proje eklendi.");
 }
 
@@ -1815,7 +1868,7 @@ function exportData() {
   const backup = { format: BACKUP_FORMAT, formatVersion: 1, exportedAt: new Date().toISOString(), appVersion: state.version, data: state };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob); const link = document.createElement("a");
-  link.href = url; link.download = `denizwork-${localDateString()}.json`; link.click(); URL.revokeObjectURL(url);
+  link.href = url; link.download = `workstation-${localDateString()}.json`; link.click(); URL.revokeObjectURL(url);
 }
 
 function importData(file) {
@@ -1964,6 +2017,7 @@ function bindEvents() {
   $("#workReportForm").addEventListener("submit", event => { event.preventDefault(); renderGeneratedWorkReport(); });
   $("#clearWorkReportBtn").addEventListener("click", clearGeneratedWorkReport);
   $("#printWorkReportBtn").addEventListener("click", printGeneratedWorkReport);
+  $("#downloadWorkReportPdfBtn")?.addEventListener("click", () => { downloadGeneratedWorkReportPdf(); });
   window.addEventListener("afterprint", () => document.body.classList.remove("printing-work-report"));
 
   $("#settingsForm").addEventListener("submit", event => {

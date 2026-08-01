@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#101827" />
   <meta name="color-scheme" content="light dark" />
-  <meta name="description" content="DenizWork — çalışma saatleri, satış primi, todo ve müşteri takibini tek yerde tutan kişisel panel." />
-  <title>DenizWork</title>
+  <meta name="description" content="Workstation — çalışma saatleri, satış primi, todo ve müşteri takibini tek yerde tutan kişisel panel." />
+  <title>Workstation</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">DW</div>
-        <div><strong>DenizWork</strong><span>Kişisel çalışma alanı</span></div>
+        <div class="brand-mark">WS</div>
+        <div><strong>Workstation</strong><span>Kişisel çalışma alanı</span></div>
       </div>
       <nav class="nav" aria-label="Ana menü">
         <button class="nav-item active" data-view="dashboard"><b>⌂</b><span>Panel</span></button>
@@ -248,8 +248,12 @@
 
         <article class="work-report panel" id="generatedWorkReport" hidden aria-live="polite">
           <div class="work-report-head">
-            <div><span class="report-document-label">ÇALIŞMA FAALİYET RAPORU</span><h2>DenizWork</h2><p id="workReportPeriod">—</p></div>
-            <div class="work-report-actions"><button class="secondary-btn" id="clearWorkReportBtn" type="button">Temizle</button><button class="secondary-btn" id="printWorkReportBtn" type="button">Yazdır / PDF</button></div>
+            <div><span class="report-document-label">ÇALIŞMA FAALİYET RAPORU</span><h2>Workstation</h2><p id="workReportPeriod">—</p></div>
+            <div class="work-report-actions">
+              <button class="secondary-btn" id="clearWorkReportBtn" type="button">Temizle</button>
+              <button class="secondary-btn" id="printWorkReportBtn" type="button">Yazdır / PDF</button>
+              <button class="primary-btn" id="downloadWorkReportPdfBtn" type="button">PDF olarak indir</button>
+            </div>
           </div>
           <div class="work-report-summary">
             <div><span>Toplam çalışma</span><strong id="workReportHours">0 dk</strong></div>
@@ -264,7 +268,6 @@
           <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Saat</th><th>Süre</th><th>Kazanç</th><th>Müşteri / Proje</th><th>Yapılan iş</th><th>Açıklama</th></tr></thead><tbody id="workReportTable"></tbody></table></div>
           <div class="work-report-section-title"><div><span>Satış dökümü</span><small>Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir</small></div></div>
           <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Satış</th><th>Müşteri / Proje</th><th>Aşama</th><th>Tutar</th><th>Prim</th><th>Prim durumu</th><th>Not</th></tr></thead><tbody id="workReportSalesTable"></tbody></table></div>
-          <div class="work-report-footer">Bu rapor DenizWork uygulamasındaki yerel çalışma ve satış kayıtlarından oluşturulmuştur.</div>
         </article>
 
         <div class="view-toolbar"><div class="filter-row"><input type="month" id="reportMonth" /></div><div class="toolbar-actions"><button class="secondary-btn" id="exportCsvBtn">CSV Raporu</button><button class="primary-btn" id="printReportBtn">Yazdır / PDF</button></div></div>
@@ -403,7 +406,7 @@
       <form id="projectForm" class="modal-form hidden">
         <input type="hidden" name="editId" />
         <label>Proje adı<input name="name" required placeholder="Örn. Web sitesi yenileme" /></label>
-        <label>Müşteri<select name="customerId" data-customer-select required><option value="">Müşteri seç</option></select></label>
+        <label>Müşteri<select name="customerId" data-customer-select><option value="">Müşteri yok</option></select></label>
         <label>Durum<select name="status"><option value="active">Aktif</option><option value="paused">Beklemede</option><option value="completed">Tamamlandı</option></select></label>
         <label>Renk<input type="color" name="color" value="#4f7cff" /></label>
         <label>Not<textarea name="note" rows="2"></textarea></label>

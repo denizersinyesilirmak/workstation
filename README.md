@@ -37,7 +37,7 @@ Tarayıcıda: [http://localhost:5500](http://localhost:5500)
 
 ## Yedekleme
 
-Ayarlar’dan JSON yedek alabilir veya geri yükleyebilirsiniz. Dışa aktarılan dosya adı: `denizwork-YYYY-MM-DD.json`.
+Ayarlar’dan JSON yedek alabilir veya geri yükleyebilirsiniz. Dışa aktarılan dosya adı: `workstation-YYYY-MM-DD.json`.
 
 ## Lisans
 
