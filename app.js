@@ -1310,16 +1310,17 @@ function collectWorkReportPdfData() {
   };
 }
 
-async function downloadGeneratedWorkReportPdf() {
+async function downloadGeneratedWorkReportPdf(mode = "personal") {
   const report = $("#generatedWorkReport");
   if (!generatedReportRange || report?.hidden) return toast("Önce bir çalışma raporu oluşturun.");
-  const button = $("#downloadWorkReportPdfBtn");
-  const previousLabel = button?.textContent;
+  const isCompany = mode === "company";
+  const buttons = [$("#downloadPersonalPdfBtn"), $("#downloadCompanyPdfBtn")].filter(Boolean);
+  const labels = buttons.map(btn => btn.textContent);
   try {
-    if (button) {
-      button.disabled = true;
-      button.textContent = "PDF hazırlanıyor…";
-    }
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      btn.textContent = "PDF hazırlanıyor…";
+    });
     await loadPdfLibs();
     const data = collectWorkReportPdfData();
     const { jsPDF } = window.jspdf;
@@ -1327,33 +1328,32 @@ async function downloadGeneratedWorkReportPdf() {
     await ensurePdfFont(doc);
 
     const period = `${formatDate(data.start, { day: "numeric", month: "long", year: "numeric" })} – ${formatDate(data.end, { day: "numeric", month: "long", year: "numeric" })}`;
-    doc.setFontSize(10);
-    doc.setTextColor(75, 85, 99);
-    doc.text("ÇALIŞMA FAALİYET RAPORU", 14, 14);
-    doc.setFontSize(18);
+    doc.setFontSize(14);
     doc.setTextColor(17, 24, 39);
-    doc.text("Workstation", 14, 22);
+    doc.text("ÇALIŞMA FAALİYET RAPORU", 14, 16);
     doc.setFontSize(10);
     doc.setTextColor(75, 85, 99);
-    doc.text(period, 14, 28);
-    doc.text(`Oluşturulma: ${new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })}`, 14, 34);
+    doc.text(period, 14, 23);
+    doc.text(`Oluşturulma: ${new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })}`, 14, 29);
 
     doc.setFontSize(9);
     doc.setTextColor(17, 24, 39);
     const summaryParts = [
       `Toplam çalışma: ${formatDuration(data.minutes)}`,
-      `Çalışma kazancı: ${formatMoney(data.income)}`,
       `Çalışılan gün: ${data.days}`,
       `Çalışma kaydı: ${data.work.length}`
     ];
-    if (data.sales.length) {
-      summaryParts.push(
-        `Satış kaydı: ${data.sales.length}`,
-        `Kazanılan satış: ${formatMoney(data.salesTotal)}`,
-        `Prim: ${formatMoney(data.commission)}`
-      );
+    if (!isCompany) {
+      summaryParts.splice(1, 0, `Çalışma kazancı: ${formatMoney(data.income)}`);
+      if (data.sales.length) {
+        summaryParts.push(
+          `Satış kaydı: ${data.sales.length}`,
+          `Kazanılan satış: ${formatMoney(data.salesTotal)}`,
+          `Prim: ${formatMoney(data.commission)}`
+        );
+      }
     }
-    doc.text(summaryParts.join("   |   "), 14, 42);
+    doc.text(summaryParts.join("   |   "), 14, 37);
 
     const tableOptions = {
       theme: "grid",
@@ -1378,32 +1378,56 @@ async function downloadGeneratedWorkReportPdf() {
     };
 
     doc.setFontSize(11);
-    doc.text("Faaliyet dökümü", 14, 50);
-    doc.autoTable({
-      ...tableOptions,
-      startY: 53,
-      head: [["Tarih", "Saat", "Süre", "Kazanç", "Yapılan iş", "Açıklama"]],
-      body: data.work.length
-        ? data.work.map(item => [
-          formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
-          formatTimeRange(item.start, item.end),
-          `${formatDuration(item.minutes)}${item.breakMinutes ? ` (${Number(item.breakMinutes)} dk mola)` : ""}`,
-          `${formatMoney(sessionIncome(item))} (${formatMoney(sessionHourlyRate(item))}/sa)`,
-          item.title || "—",
-          item.note || "—"
-        ])
-        : [["Seçilen aralıkta çalışma kaydı yok", "", "", "", "", ""]],
-      columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 26 },
-        2: { cellWidth: 32 },
-        3: { cellWidth: 36 },
-        4: { cellWidth: 48 },
-        5: { cellWidth: "auto" }
-      }
-    });
+    doc.text("Faaliyet dökümü", 14, 45);
+    if (isCompany) {
+      doc.autoTable({
+        ...tableOptions,
+        startY: 48,
+        head: [["Tarih", "Saat", "Süre", "Yapılan iş", "Açıklama"]],
+        body: data.work.length
+          ? data.work.map(item => [
+            formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
+            formatTimeRange(item.start, item.end),
+            `${formatDuration(item.minutes)}${item.breakMinutes ? ` (${Number(item.breakMinutes)} dk mola)` : ""}`,
+            item.title || "—",
+            item.note || "—"
+          ])
+          : [["Seçilen aralıkta çalışma kaydı yok", "", "", "", ""]],
+        columnStyles: {
+          0: { cellWidth: 32 },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 34 },
+          3: { cellWidth: 55 },
+          4: { cellWidth: "auto" }
+        }
+      });
+    } else {
+      doc.autoTable({
+        ...tableOptions,
+        startY: 48,
+        head: [["Tarih", "Saat", "Süre", "Kazanç", "Yapılan iş", "Açıklama"]],
+        body: data.work.length
+          ? data.work.map(item => [
+            formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
+            formatTimeRange(item.start, item.end),
+            `${formatDuration(item.minutes)}${item.breakMinutes ? ` (${Number(item.breakMinutes)} dk mola)` : ""}`,
+            `${formatMoney(sessionIncome(item))} (${formatMoney(sessionHourlyRate(item))}/sa)`,
+            item.title || "—",
+            item.note || "—"
+          ])
+          : [["Seçilen aralıkta çalışma kaydı yok", "", "", "", "", ""]],
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 32 },
+          3: { cellWidth: 36 },
+          4: { cellWidth: 48 },
+          5: { cellWidth: "auto" }
+        }
+      });
+    }
 
-    if (data.sales.length) {
+    if (!isCompany && data.sales.length) {
       const salesStart = (doc.lastAutoTable?.finalY || 60) + 10;
       doc.setFontSize(11);
       doc.setTextColor(17, 24, 39);
@@ -1439,16 +1463,19 @@ async function downloadGeneratedWorkReportPdf() {
       });
     }
 
-    doc.save(`${data.start}_${data.end} çalışma özetim.pdf`);
-    toast("PDF indirildi.");
+    const filename = isCompany
+      ? `${data.start}_${data.end} şirket çalışma raporu.pdf`
+      : `${data.start}_${data.end} çalışma özetim.pdf`;
+    doc.save(filename);
+    toast(isCompany ? "Şirket PDF’i indirildi." : "Kişisel PDF indirildi.");
   } catch (error) {
     console.warn("PDF indirme başarısız", error);
     toast(error?.message || "PDF indirilemedi.");
   } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = previousLabel || "PDF olarak indir";
-    }
+    buttons.forEach((btn, index) => {
+      btn.disabled = false;
+      btn.textContent = labels[index] || (index === 0 ? "PDF · Kişisel" : "PDF · Şirket");
+    });
   }
 }
 
@@ -2183,7 +2210,8 @@ function bindEvents() {
   $("#workReportForm").addEventListener("submit", event => { event.preventDefault(); renderGeneratedWorkReport(); });
   $("#clearWorkReportBtn").addEventListener("click", clearGeneratedWorkReport);
   $("#printWorkReportBtn").addEventListener("click", printGeneratedWorkReport);
-  $("#downloadWorkReportPdfBtn")?.addEventListener("click", () => { downloadGeneratedWorkReportPdf(); });
+  $("#downloadPersonalPdfBtn")?.addEventListener("click", () => { downloadGeneratedWorkReportPdf("personal"); });
+  $("#downloadCompanyPdfBtn")?.addEventListener("click", () => { downloadGeneratedWorkReportPdf("company"); });
   window.addEventListener("afterprint", () => document.body.classList.remove("printing-work-report"));
 
   $("#settingsForm").addEventListener("submit", event => {
