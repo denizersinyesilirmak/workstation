@@ -260,14 +260,16 @@
             <div><span>Çalışma kazancı</span><strong id="workReportIncome">₺0</strong></div>
             <div><span>Çalışılan gün</span><strong id="workReportDays">0</strong></div>
             <div><span>Çalışma kaydı</span><strong id="workReportCount">0</strong></div>
-            <div><span>Satış kaydı</span><strong id="workReportSalesCount">0</strong></div>
-            <div><span>Kazanılan satış</span><strong id="workReportSalesTotal">₺0</strong></div>
-            <div><span>Prim bilgisi</span><strong id="workReportCommission">₺0</strong></div>
+            <div data-report-sales-summary><span>Satış kaydı</span><strong id="workReportSalesCount">0</strong></div>
+            <div data-report-sales-summary><span>Kazanılan satış</span><strong id="workReportSalesTotal">₺0</strong></div>
+            <div data-report-sales-summary><span>Prim bilgisi</span><strong id="workReportCommission">₺0</strong></div>
           </div>
           <div class="work-report-section-title"><div><span>Faaliyet dökümü</span><small id="workReportCreatedAt"></small></div></div>
           <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Saat</th><th>Süre</th><th>Kazanç</th><th>Yapılan iş</th><th>Açıklama</th></tr></thead><tbody id="workReportTable"></tbody></table></div>
-          <div class="work-report-section-title"><div><span>Satış dökümü</span><small>Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir</small></div></div>
-          <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Satış</th><th>Müşteri / Proje</th><th>Aşama</th><th>Tutar</th><th>Prim</th><th>Prim durumu</th><th>Not</th></tr></thead><tbody id="workReportSalesTable"></tbody></table></div>
+          <div id="workReportSalesSection">
+            <div class="work-report-section-title"><div><span>Satış dökümü</span><small>Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir</small></div></div>
+            <div class="table-wrap work-report-table"><table><thead><tr><th>Tarih</th><th>Satış</th><th>Müşteri / Proje</th><th>Aşama</th><th>Tutar</th><th>Prim</th><th>Prim durumu</th><th>Not</th></tr></thead><tbody id="workReportSalesTable"></tbody></table></div>
+          </div>
         </article>
 
         <div class="view-toolbar"><div class="filter-row"><input type="month" id="reportMonth" /></div><div class="toolbar-actions"><button class="secondary-btn" id="exportCsvBtn">CSV Raporu</button><button class="primary-btn" id="printReportBtn">Yazdır / PDF</button></div></div>

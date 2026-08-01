@@ -1195,9 +1195,6 @@ function renderGeneratedWorkReport(showMessage = true) {
   setText("#workReportIncome", formatMoney(workIncome(work)));
   setText("#workReportDays", days);
   setText("#workReportCount", work.length);
-  setText("#workReportSalesCount", sales.length);
-  setText("#workReportSalesTotal", formatMoney(salesTotal));
-  setText("#workReportCommission", formatMoney(commission));
   setText("#workReportCreatedAt", `Oluşturulma: ${new Date().toLocaleString("tr-TR", { dateStyle: "long", timeStyle: "short" })}`);
   $("#workReportTable").innerHTML = work.length ? work.map(item => `
     <tr>
@@ -1208,17 +1205,29 @@ function renderGeneratedWorkReport(showMessage = true) {
       <td><strong>${escapeHtml(item.title)}</strong></td>
       <td class="report-note">${escapeHtml(item.note || "—")}</td>
     </tr>`).join("") : `<tr><td colspan="6" class="empty-state">Seçilen tarih aralığında çalışma kaydı bulunamadı.</td></tr>`;
-  $("#workReportSalesTable").innerHTML = sales.length ? sales.map(item => `
-    <tr>
-      <td>${formatDate(item.date, { day: "numeric", month: "short", year: "numeric" })}</td>
-      <td><strong>${escapeHtml(item.title)}</strong></td>
-      <td>${escapeHtml(relationLabel(item, "—"))}</td>
-      <td><span class="badge badge-${item.stage}">${stageLabel(item.stage)}</span></td>
-      <td>${formatMoney(item.amount)}</td>
-      <td><strong>${formatMoney(item.commission)}</strong><br><small>%${Number(item.commissionRate || 0)}</small></td>
-      <td><span class="badge badge-${item.paymentStatus}">${paymentLabel(item.paymentStatus)}</span></td>
-      <td class="report-note">${escapeHtml(item.note || "—")}</td>
-    </tr>`).join("") : `<tr><td colspan="8" class="empty-state">Seçilen tarih aralığında satış kaydı bulunamadı.</td></tr>`;
+
+  const hasSales = sales.length > 0;
+  $$("[data-report-sales-summary]").forEach(el => { el.hidden = !hasSales; });
+  const salesSection = $("#workReportSalesSection");
+  if (salesSection) salesSection.hidden = !hasSales;
+  if (hasSales) {
+    setText("#workReportSalesCount", sales.length);
+    setText("#workReportSalesTotal", formatMoney(salesTotal));
+    setText("#workReportCommission", formatMoney(commission));
+    $("#workReportSalesTable").innerHTML = sales.map(item => `
+      <tr>
+        <td>${formatDate(item.date, { day: "numeric", month: "short", year: "numeric" })}</td>
+        <td><strong>${escapeHtml(item.title)}</strong></td>
+        <td>${escapeHtml(relationLabel(item, "—"))}</td>
+        <td><span class="badge badge-${item.stage}">${stageLabel(item.stage)}</span></td>
+        <td>${formatMoney(item.amount)}</td>
+        <td><strong>${formatMoney(item.commission)}</strong><br><small>%${Number(item.commissionRate || 0)}</small></td>
+        <td><span class="badge badge-${item.paymentStatus}">${paymentLabel(item.paymentStatus)}</span></td>
+        <td class="report-note">${escapeHtml(item.note || "—")}</td>
+      </tr>`).join("");
+  } else if ($("#workReportSalesTable")) {
+    $("#workReportSalesTable").innerHTML = "";
+  }
   $("#generatedWorkReport").hidden = false;
   if (showMessage) {
     $("#generatedWorkReport").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1331,15 +1340,20 @@ async function downloadGeneratedWorkReportPdf() {
 
     doc.setFontSize(9);
     doc.setTextColor(17, 24, 39);
-    doc.text([
+    const summaryParts = [
       `Toplam çalışma: ${formatDuration(data.minutes)}`,
       `Çalışma kazancı: ${formatMoney(data.income)}`,
       `Çalışılan gün: ${data.days}`,
-      `Çalışma kaydı: ${data.work.length}`,
-      `Satış kaydı: ${data.sales.length}`,
-      `Kazanılan satış: ${formatMoney(data.salesTotal)}`,
-      `Prim: ${formatMoney(data.commission)}`
-    ].join("   |   "), 14, 42);
+      `Çalışma kaydı: ${data.work.length}`
+    ];
+    if (data.sales.length) {
+      summaryParts.push(
+        `Satış kaydı: ${data.sales.length}`,
+        `Kazanılan satış: ${formatMoney(data.salesTotal)}`,
+        `Prim: ${formatMoney(data.commission)}`
+      );
+    }
+    doc.text(summaryParts.join("   |   "), 14, 42);
 
     const tableOptions = {
       theme: "grid",
@@ -1389,20 +1403,20 @@ async function downloadGeneratedWorkReportPdf() {
       }
     });
 
-    const salesStart = (doc.lastAutoTable?.finalY || 60) + 10;
-    doc.setFontSize(11);
-    doc.setTextColor(17, 24, 39);
-    doc.text("Satış dökümü", 14, salesStart);
-    doc.setFontSize(8);
-    doc.setTextColor(107, 114, 128);
-    doc.text("Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir", 14, salesStart + 5);
+    if (data.sales.length) {
+      const salesStart = (doc.lastAutoTable?.finalY || 60) + 10;
+      doc.setFontSize(11);
+      doc.setTextColor(17, 24, 39);
+      doc.text("Satış dökümü", 14, salesStart);
+      doc.setFontSize(8);
+      doc.setTextColor(107, 114, 128);
+      doc.text("Prim tutarları kazanç hesabına dahil edilmeden bilgi amaçlı gösterilir", 14, salesStart + 5);
 
-    doc.autoTable({
-      ...tableOptions,
-      startY: salesStart + 8,
-      head: [["Tarih", "Satış", "Müşteri / Proje", "Aşama", "Tutar", "Prim", "Prim durumu", "Not"]],
-      body: data.sales.length
-        ? data.sales.map(item => [
+      doc.autoTable({
+        ...tableOptions,
+        startY: salesStart + 8,
+        head: [["Tarih", "Satış", "Müşteri / Proje", "Aşama", "Tutar", "Prim", "Prim durumu", "Not"]],
+        body: data.sales.map(item => [
           formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
           item.title || "—",
           relationLabel(item, "—"),
@@ -1411,19 +1425,19 @@ async function downloadGeneratedWorkReportPdf() {
           `${formatMoney(item.commission)} (%${Number(item.commissionRate || 0)})`,
           paymentLabel(item.paymentStatus),
           item.note || "—"
-        ])
-        : [["Seçilen aralıkta satış kaydı yok", "", "", "", "", "", "", ""]],
-      columnStyles: {
-        0: { cellWidth: 26 },
-        1: { cellWidth: 32 },
-        2: { cellWidth: 34 },
-        3: { cellWidth: 24 },
-        4: { cellWidth: 24 },
-        5: { cellWidth: 28 },
-        6: { cellWidth: 24 },
-        7: { cellWidth: "auto" }
-      }
-    });
+        ]),
+        columnStyles: {
+          0: { cellWidth: 26 },
+          1: { cellWidth: 32 },
+          2: { cellWidth: 34 },
+          3: { cellWidth: 24 },
+          4: { cellWidth: 24 },
+          5: { cellWidth: 28 },
+          6: { cellWidth: 24 },
+          7: { cellWidth: "auto" }
+        }
+      });
+    }
 
     doc.save(`${data.start}_${data.end} çalışma özetim.pdf`);
     toast("PDF indirildi.");

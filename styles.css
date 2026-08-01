@@ -517,6 +517,8 @@ body.notes-open { overflow: hidden; }
 .work-report-summary { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
 .work-report-summary div { padding: 19px 22px; border-right: 1px solid var(--line); }
 .work-report-summary div:last-child { border-right: 0; }
+.work-report-summary [hidden],
+#workReportSalesSection[hidden] { display: none !important; }
 .work-report-summary span, .work-report-summary strong { display: block; }
 .work-report-summary span { color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .work-report-summary strong { margin-top: 7px; font-size: 18px; letter-spacing: -.03em; }
