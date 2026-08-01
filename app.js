@@ -1343,7 +1343,12 @@ async function downloadGeneratedWorkReportPdf(mode = "personal") {
       `Çalışılan gün: ${data.days}`,
       `Çalışma kaydı: ${data.work.length}`
     ];
+    let summaryY = 37;
     if (!isCompany) {
+      const totalEarnings = roundMoney(Number(data.income || 0) + Number(data.salesTotal || 0));
+      doc.setFontSize(12);
+      doc.setTextColor(17, 24, 39);
+      doc.text(`Toplam kazanç: ${formatMoney(totalEarnings)}`, 14, 37);
       summaryParts.splice(1, 0, `Çalışma kazancı: ${formatMoney(data.income)}`);
       if (data.sales.length) {
         summaryParts.push(
@@ -1352,8 +1357,10 @@ async function downloadGeneratedWorkReportPdf(mode = "personal") {
           `Prim: ${formatMoney(data.commission)}`
         );
       }
+      summaryY = 44;
+      doc.setFontSize(9);
     }
-    doc.text(summaryParts.join("   |   "), 14, 37);
+    doc.text(summaryParts.join("   |   "), 14, summaryY);
 
     const tableOptions = {
       theme: "grid",
@@ -1377,12 +1384,14 @@ async function downloadGeneratedWorkReportPdf(mode = "personal") {
       margin: { left: 14, right: 14 }
     };
 
+    const activityTitleY = summaryY + 8;
     doc.setFontSize(11);
-    doc.text("Faaliyet dökümü", 14, 45);
+    doc.setTextColor(17, 24, 39);
+    doc.text("Faaliyet dökümü", 14, activityTitleY);
     if (isCompany) {
       doc.autoTable({
         ...tableOptions,
-        startY: 48,
+        startY: activityTitleY + 3,
         head: [["Tarih", "Saat", "Süre", "Yapılan iş", "Açıklama"]],
         body: data.work.length
           ? data.work.map(item => [
@@ -1404,7 +1413,7 @@ async function downloadGeneratedWorkReportPdf(mode = "personal") {
     } else {
       doc.autoTable({
         ...tableOptions,
-        startY: 48,
+        startY: activityTitleY + 3,
         head: [["Tarih", "Saat", "Süre", "Kazanç", "Yapılan iş", "Açıklama"]],
         body: data.work.length
           ? data.work.map(item => [
