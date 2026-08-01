@@ -1205,10 +1205,9 @@ function renderGeneratedWorkReport(showMessage = true) {
       <td>${escapeHtml(formatTimeRange(item.start, item.end))}</td>
       <td><strong>${formatDuration(item.minutes)}</strong>${item.breakMinutes ? `<br><small>${Number(item.breakMinutes)} dk mola</small>` : ""}</td>
       <td><strong>${formatMoney(sessionIncome(item))}</strong><br><small>${formatMoney(sessionHourlyRate(item))}/sa</small></td>
-      <td>${escapeHtml(relationLabel(item, "—"))}</td>
       <td><strong>${escapeHtml(item.title)}</strong></td>
       <td class="report-note">${escapeHtml(item.note || "—")}</td>
-    </tr>`).join("") : `<tr><td colspan="7" class="empty-state">Seçilen tarih aralığında çalışma kaydı bulunamadı.</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="6" class="empty-state">Seçilen tarih aralığında çalışma kaydı bulunamadı.</td></tr>`;
   $("#workReportSalesTable").innerHTML = sales.length ? sales.map(item => `
     <tr>
       <td>${formatDate(item.date, { day: "numeric", month: "short", year: "numeric" })}</td>
@@ -1369,26 +1368,24 @@ async function downloadGeneratedWorkReportPdf() {
     doc.autoTable({
       ...tableOptions,
       startY: 53,
-      head: [["Tarih", "Saat", "Süre", "Kazanç", "Müşteri / Proje", "Yapılan iş", "Açıklama"]],
+      head: [["Tarih", "Saat", "Süre", "Kazanç", "Yapılan iş", "Açıklama"]],
       body: data.work.length
         ? data.work.map(item => [
           formatDate(item.date, { day: "numeric", month: "short", year: "numeric" }),
           formatTimeRange(item.start, item.end),
           `${formatDuration(item.minutes)}${item.breakMinutes ? ` (${Number(item.breakMinutes)} dk mola)` : ""}`,
           `${formatMoney(sessionIncome(item))} (${formatMoney(sessionHourlyRate(item))}/sa)`,
-          relationLabel(item, "—"),
           item.title || "—",
           item.note || "—"
         ])
-        : [["Seçilen aralıkta çalışma kaydı yok", "", "", "", "", "", ""]],
+        : [["Seçilen aralıkta çalışma kaydı yok", "", "", "", "", ""]],
       columnStyles: {
-        0: { cellWidth: 28 },
-        1: { cellWidth: 24 },
-        2: { cellWidth: 28 },
-        3: { cellWidth: 32 },
-        4: { cellWidth: 36 },
-        5: { cellWidth: 40 },
-        6: { cellWidth: "auto" }
+        0: { cellWidth: 30 },
+        1: { cellWidth: 26 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 36 },
+        4: { cellWidth: 48 },
+        5: { cellWidth: "auto" }
       }
     });
 
@@ -1428,7 +1425,7 @@ async function downloadGeneratedWorkReportPdf() {
       }
     });
 
-    doc.save(`workstation-rapor-${data.start}_${data.end}.pdf`);
+    doc.save(`${data.start}_${data.end} çalışma özetim.pdf`);
     toast("PDF indirildi.");
   } catch (error) {
     console.warn("PDF indirme başarısız", error);
