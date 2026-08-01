@@ -1261,8 +1261,8 @@ function loadScriptOnce(src, marker) {
 }
 
 async function loadPdfLibs() {
-  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js", "jspdf");
-  await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js", "jspdf-autotable");
+  await loadScriptOnce("vendor/jspdf.umd.min.js", "jspdf");
+  await loadScriptOnce("vendor/jspdf.plugin.autotable.min.js", "jspdf-autotable");
   if (!window.jspdf?.jsPDF) throw new Error("PDF kütüphanesi hazır değil.");
 }
 
@@ -1273,7 +1273,7 @@ async function ensurePdfFont(doc) {
     doc.setFont("ReportFont", "normal");
     return;
   }
-  const response = await fetch("https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf");
+  const response = await fetch("vendor/DejaVuSans.ttf");
   if (!response.ok) throw new Error("PDF yazı tipi yüklenemedi.");
   const buffer = await response.arrayBuffer();
   const bytes = new Uint8Array(buffer);
